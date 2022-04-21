@@ -1,0 +1,52 @@
+function [coeffs, sig_approx, approx_error] = approx_pulse(sig, n, f0)
+% the inputs are the signal vector to be approximated, the number of terms
+% in (2), and fundamental frequency f0
+% the outputs are coeffs the combining coefficients, sig_approx the
+% approximated signal, and approx_error which is the approximation error
+% in(3)
+
+% set M equal to ones of length(sig) with one column
+M = ones(length(sig),1);
+% this is a for loop going from 1 to number of terms
+for ii = 1:n 
+    M(:,ii+1) = cos(2*pi*f0*(1:length(sig))*ii);
+end
+
+% set coeffs equal to left division of M and transposed of sig
+coeffs = M\sig';
+% then sig_approx is M times the combining coefficients 
+sig_approx = M*coeffs;
+% approx_error is set to the sum of transposed of sig minus sig_approx
+% which the result of is then dot squared by 2
+approx_error = sum((sig' - sig_approx).^2);
+
+% set variable, in this case a to coeffs of 1
+a = coeffs(1);
+% fprintf statement which displays approximate signal
+fprintf('Approx Signal = %f', a);
+
+% for loop from 1 to number of terms
+for jj = 1:n
+    fprintf('+ %.2fcos(2*pi*f0*k*%i) \n', coeffs(jj+1), jj)
+end
+% fprintf statement which displays approximation error
+fprintf('Approximation error is .6%f \n', approx_error)
+
+% use plot to get the desired figures passing in 1 to length of sig and sig
+plot(1:length(sig), sig) 
+end
+
+
+% gen_pulse_train function which will give a vector that
+% switched between 0 and 1
+% inputs are number of elements in initial off period where the signal is
+% equal to 0, number of elements in the on period where the signal is equal
+% to 1, and the number of complete cycles 
+function pulse_train = gen_pulse_train(off, on, cycles)
+% period variable is equal to array of zeros of 1 and initial off period,
+% ones of 1 and initial on period and zeros of 1 and initial off period
+period = [zeros(1,off), ones(1,on), zeros(1,off)];
+% variable pulse_train is set to repmat of matrix of 1 by number of cycles
+% containing period
+pulse_train = repmat(period, 1, cycles);
+end
