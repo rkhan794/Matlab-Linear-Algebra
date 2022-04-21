@@ -1,0 +1,135 @@
+julia.m
+----------------------
+function [EscTime, EscVal, Image] = julia(c, limits, nx, ny, maxEscTime)
+% Main function with mandatory c input with four optional inputs. There are
+% also three outputs we want from this julia function. 
+
+% Set R equal to the given formula
+R = (1+sqrt(1+4*abs(c)))/2;
+% if statements setting optional variable inputs to their defaults
+if ~exist ('limits','var')|| isempty(limits)
+    limits = [-R R -R R];
+end
+if ~exist ('nx','var')|| isempty(nx)
+    nx = 1024;
+end
+if ~exist ('ny','var')|| isempty(ny)
+    ny = 1024;
+end
+if ~exist ('maxEscTime','var')|| isempty(maxEscTime)
+    maxEscTime = 1000;
+end
+
+% We have to create ny by nx array called Z. This will make array Z with
+% complex numbers. Linspace and meshgrid are useful functions to help in
+% this.
+x = linspace(limits(1),limits(2),nx);
+y = linspace(limits(4),limits(3),ny);
+[X,Y] = meshgrid(x,y);
+Z = X + 1i*Y;
+% Initialize the array EscTime to be an ny-by-nx array of all Inf
+EscTime = Inf(ny,nx);
+% Initialize the array EscVal to be an ny-by-nx array of all NaN
+EscVal = NaN(ny,nx);
+% ny-by-nx array called done of all logical false values
+done = false(ny,nx);
+
+% k is 1 to maxEscTime. This for loop satisfies the conditions for number 4
+% part c. To make it simpler, set absZ to the absolute value of array Z.
+% Besides this, one condition for line 46 is done since this checks if it
+% was already true.
+for k = 1:maxEscTime
+    Z = Z.^2 + c;
+    absZ = abs(Z);
+    new = absZ > R & ~done;
+    EscTime(new) = k;
+    EscVal(new) = absZ(new);
+    done = new | done;
+    % use done after if because this works as a conditional if the done
+    % array is true
+    if done
+        break
+    end
+end
+
+% Plot result as a color image
+% Show color image of a julia set
+% Using showJulia function to return Image
+Image = showJulia(EscTime,EscVal,limits);
+end
+
+
+
+explorejulia.m
+-------------------
+c = input('Enter a value for the parameter c: ');
+limits = [];
+while true
+    fprintf('Working...\n');
+    [EscTime,EscVal,Image] = julia(c,limits);
+    fprintf('Select rectangle (or CTRL-C to exit).\n');
+    r = getrect;
+    limits = [r(1), r(1)+r(3), r(2), r(2)+r(4)];
+end
+
+
+
+
+
+showjulia.m
+-------------------
+function Image = showJulia(EscTime,EscVal,limits)
+% SHOWJULIA Show a color image of a Julia set.
+%
+% function Image = showJulia(EscTime,EscVal,limits)
+%
+% Inputs:
+%   EscTime = matrix of integer escape times
+%   EscVal  = matrix of absolute z-values at escape times
+%   limits  = vector of rectangular region limits, as in axis()
+%
+% Outputs:
+%   Image = ny-by-nx-by-3 "truecolor" image array for use in imshow()
+%
+% See also IMSHOW.
+
+[ny,nx] = size(EscTime);
+x = linspace(limits(1),limits(2),nx);
+y = linspace(limits(4),limits(3),ny);
+
+% convert to real escape times for less color quantization
+mask = isfinite(EscTime);
+EscTime(mask) = EscTime(mask) - log(log2(EscVal(mask)));
+E1 = EscTime(mask);
+
+if isempty(E1)
+    Image = zeros(ny,nx,3);
+else
+    ncolors = 2^20;
+    cdf = [0 histcounts(E1,'BinMethod','integers','Normalization','cdf')];
+    % restrict the cdf slope
+    for k = 2:length(cdf)
+        cdf(k) = min(cdf(k-1)+1e-2,cdf(k));  % avoid large color jumps
+        cdf(k) = max(cdf(k-1)+1e-6,cdf(k));  % avoid color flatness
+    end
+    cdf = cdf/cdf(end);  % renormalize
+    indices = [1+floor(cdf*(ncolors-2)) ncolors];
+    cmap = jet(ncolors);
+    cmap = interp1(linspace(1,ncolors,length(indices)),...
+        cmap(indices,:),1:ncolors);
+    cmap(ncolors,:) = 0;  % make top color black
+    Emin = min(E1);
+    if isempty(Emin)
+        Emin = 0;
+    end
+    Emax = max(EscTime(mask));
+    slope = (ncolors-2)/(Emax-Emin);
+    val = round(1 + slope*(EscTime-Emin));
+    val(~mask) = ncolors;  % makes interior points highest (black)
+    Image = reshape(cmap(val,:),ny,nx,3);
+end
+imshow(Image,'XData',x,'YData',y);
+set(gca,'YDir','normal');
+axis on;
+
+end
