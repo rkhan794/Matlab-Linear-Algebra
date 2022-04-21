@@ -1,0 +1,61 @@
+% this is the sirhd function, taking in steps, s_init, and param. Variant
+% is also a function param.
+function new_s_init = sirhd(steps,s_init,param)
+
+if ~exist('steps','var') || isempty(steps)
+    error('Enter number of steps')
+end
+if ~exist('s_init','var') || isempty(s_init)
+    error('Enter initial state numbers')
+end
+if ~exist('param','var') || isempty(param)
+    error('Enter the parameters')
+end 
+if size(param) ~= size(1,6)
+    fprintf('Parameters are wrong')
+end
+if (size(s_init) ~= size(1,5))
+    fprintf('Initial state number is wrong')
+end
+% set new_s_init or the output value equal to zeros of rows length(s_init)
+% and columns steps
+new_s_init = zeros(length(s_init), steps);
+new_s_init(:,1) = s_init;
+% set the parameters equal to param
+p_SI = param(1);
+p_IR = param(2);
+p_IH = param(3);
+p_HR = param(4);
+p_RS = param(5);
+p_HD = param(6);
+% set the initial state probabilites to s_init
+S = s_init(1);
+I = s_init(2);
+R = s_init(3);
+H = s_init(4);
+D = s_init(5);
+% fprintf statements to display the parameters and initial state
+% probabilties
+fprintf('The parameters are:\n p_SI: %f\n p_IR: %f\n p_IH: %f\n p_HR: %f\n p_RS: %f\n p_HD: %f\n',p_SI,p_IR,p_IH,p_HR,p_RS,p_HD);
+fprintf('The initial state probabilities are:\n S: %f\n I: %f\n R: %f\n H: %f\n D: %f\n',S,I,R,H,D);
+
+
+P = [1-p_SI*new_s_init(2) p_SI(1)*new_s_init(2) 0 0 0; 0 1-p_IR-p_IH p_IR p_IH 0; p_RS 0 1-p_RS 0 0; 0 0 p_HR 1-p_HR-p_HD p_HD; 0 0 0 0 1];
+% for loop to go from 2 to steps taking in new_s_init and also updating the
+% P matrix in the loop
+for ii = 2:steps
+    new_s_init(:,ii) = P'*new_s_init(:,ii-1);
+    P = [1-p_SI(ii)*new_s_init(2,ii) p_SI(ii)*new_s_init(2,ii) 0 0 0; 0 1-param(2)-p_IH param(2) p_IH 0; p_RS 0 1-p_RS 0 0; 0 0 p_HR 1-p_HR-p_HD p_HD; 0 0 0 0 1];
+end
+
+subplot(2,1,1);
+plot(1:steps,new_s_init([2 4 5], :)');
+xlabel ('Steps')
+ylabel ('Initial State Prob')
+legend ('Infected, Hospitalized, and Deceased')
+subplot(2,1,2);
+plot(1:steps, new_s_init([1 3], :)');
+xlabel ('Steps')
+ylabel ('Initial State Prob') 
+legend ("Susceptible and Recovered")
+end
