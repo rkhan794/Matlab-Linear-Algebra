@@ -1,0 +1,62 @@
+%%%% TASK ONE  %%%%%%%%%%%%%%
+n = input('Enter number of steps: ');
+% set original position to origin
+position = [0,0];
+% matrix of these possible steps that is chosen at random
+step = [1 0; -1 0; 0 1; 0 -1];
+axis equal;
+hold on;
+title('Random Walk in the x-y plane')
+% loop from 1 through number of steps inputted
+% new direction is step of random 4 directions possible
+% you have to update postion as well. Here I add new_direction
+for ii = 1:n
+    new_direction = step(randi(4),:);
+    quiver(position(1),position(2),new_direction(1),new_direction(2), 1.0,'r', 'LineWidth', 3,'MaxHeadSize', .8);
+    pause(0.01)
+    position = position + new_direction;
+end
+% euclidean distance formula set to distance variable
+hold off;
+axis auto;
+distance = sqrt((position(1))^2 + (position(2)^2));
+fprintf('The final position is (%i, %i) and the Euclidean distance from the origin is %.2f\n', position(1), position(2), distance);
+
+%%%% TASK TWO  %%%%%%%%%%%%%%
+clear;
+% inputs the user puts
+trials = input('Enter number of random walks: ');
+d_max = input('Enter the distance threshold: ');
+max_steps = input('Enter the maximum number of steps in each random walk: ');
+% matrix of these possible steps that is chosen at random
+step = [1 0; -1 0; 0 1; 0 -1];
+
+plot_steps = zeros(1,trials);   %%%% solution array
+% 1 through the number of trials. In this the while loop operates checking
+% distance and step_num. Distance is again calculated and if step_num ==
+% max_steps warning appears. Mod is used to increment trials by 500 instead of 1. plot_steps and input of ii which is iterating
+% from 1 through trials.
+for ii = 1:trials
+    step_num = 0;
+    position = [0,0];
+    distance = 0;
+    while distance <= d_max && step_num < max_steps
+        new_direction = step(randi(4),:);
+        position = position + new_direction; 
+        distance = sqrt((position(1))^2 + (position(2)^2));
+        step_num = step_num + 1;
+    end
+    if step_num == max_steps
+        warning('Maximum number of steps exceeded!')
+    end
+    if mod(ii,500) == 0
+        fprintf('Trials %i\n', ii)
+    end
+    plot_steps(ii) = step_num;   
+end
+% histogram command with plot_steps and 50 bins.
+histogram(plot_steps,50);
+title(sprintf('Histogram of number of steps to reach distance %i', d_max))
+% calculate average number of steps given inputs
+average = (sum(plot_steps)/trials);
+fprintf('Average number of steps to reach distance %i is %.2f\n', d_max, average); 
