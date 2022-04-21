@@ -1,0 +1,145 @@
+function [cs, ns, coords_cs, coords_ns] = space(A,b)
+% Check inputs A and b
+if ~exist('A','var') || isempty(A)
+   A = []; 
+end
+if ~exist('b','var') || isempty(b)
+   b = [];
+end
+
+[reducedM,pivotM] = rref(A);
+% assign dimensions of matrix A to variables m and n
+m = size(A,1); 
+n = size(A,2);
+% initially set outputs to empty arrays
+% the columns of cs form a basis for the column space of A
+cs = [];
+% the columns of ns form a basis for the null space of A
+ns = [];
+% coords cs contains the coordinates of b if it is in the column space (or an empty matrix otherwise)
+coords_cs = [];
+% coords ns contains the coordinates of b if it is in the null space (or an empty matrix otherwise)
+coords_ns = [];
+
+% assign value of pivotM to cs_dim, the cs dimension
+cs_dim = pivotM;
+% subtract size of the 2nd dimension of reducedM and length of the cs
+% dimension. Assign this to ns dimension
+ns_dim = size(reducedM,2)-length(cs_dim);
+% print out statements telling the dimensional subspace of column and null.
+% Also R of the size of A with row for column and column for null
+fprintf('The column space is a %i dimensional subspace of R^%i\n',length(cs_dim),size(A,1));
+fprintf('The null space is a %i dimensional subspace of R^%i\n',ns_dim,size(A,2));
+
+% find the basis for the column space of A
+% use setdiff function to get the difference of two vectors and assign it
+% to bc
+% setdiff also helps to find non-pivot columns
+bc = setdiff(1:n,pivotM);
+ns = zeros(n,length(bc));
+cs = A(:,pivotM);
+% initialize column at 1 and then use for loop with ii being bc and jj
+% being pivotM. This is to find every basis. Increment y in inner loop and
+% column in outer loop
+column = 1;
+for ii = bc
+    y = 1;
+    for jj = pivotM
+        ns(jj,column) = -reducedM(y,ii);
+        y = y+1;
+    end
+    ns(ii,column) = 1;
+    column = column+1;
+end
+
+%find if b is in the ns or the cs
+% make new variables cs_new and ns_new which will be utilized for the
+% coordinates
+% if the dimension of cs is 0 then cs_new is empty matrix [] or if first dimension size of
+% vector b is not equal to first dimension size of cs
+if cs_dim == 0
+    fprintf('b is in R^%i but not in the column space of A\n',size(b,1));
+    cs_new = [];
+elseif size(b,1) ~= size(cs,1)
+    fprintf('b is in R^%i but not in the column space of matrix A\n',size(b,1));
+    cs_new = [0];
+else
+    % these are a series of if statements to check if b is in the column
+    % space or not. First set rref of cs and b to array of cs_new and placeholder
+    % variable. These utilize the rank function and see if the rank of
+    % cs_new matched the rank of cs or not. The for loop goes from 1 to the
+    % size of the second dimension of cs and prints the output
+    [cs_new,~] = rref([cs,b]);
+    if rank(cs_new) ~= rank(cs)
+        fprintf('b is in R^%i but not in the column space of A\n',size(b,1));
+    elseif rank(cs_new)==rank(cs)
+        fprintf('b is in R^%i and is in the column space of A, the coordinates are:\n',size(b,1));
+        for ii = 1:size(cs,2)
+            fprintf('%f\n',cs_new(ii,end)); 
+        end
+    end
+end
+% if the dimension of ns is 0 then ns_new is empty matrix [] or if first dimension size of
+% vector b is not equal to first dimension size of ns
+if ns_dim == 0
+    fprintf('b is in R^%i but not in the null space of A\n',size(b,1));
+    ns_new = [];
+elseif size(b,1) ~= size(ns,1)
+    fprintf('b is in R^%i but not in the null space of A\n',size(b,1));
+    ns_new = zeros(1);
+else
+    % these are a series of if statements to check if b is in the null
+    % space or not. First set rref of ns and b to array of cs_new and placeholder
+    % variable. These utilize the rank function and see if the rank of
+    % ns_new matched the rank of ns or not. The for loop goes from 1 to the
+    % size of the second dimension of ns and prints the output
+    [ns_new,~]=rref([ns,b]); 
+    if rank(ns_new) ~= rank(ns)
+        fprintf('b is in R^%i but not in the null space of A\n',size(b,1));
+    elseif rank(ns_new) == rank(ns)
+        fprintf('b is in R^%i and is in the null space of A, the coordinates are:\n',size(b,1));
+        for ii=1:size(ns,2)
+            fprintf('%f\n', ns_new(ii,end));
+        end
+    end
+end 
+
+% this if statement means b is in the null space
+if ((size(b,1) == size(ns,1)) && (rank(ns_new)==rank(ns))) && (size(b,1) ~= size(cs,1) || rank(cs_new) ~= rank(cs))
+    % set variable coords_ns to the zeros of size of ns in 2nd dimension in
+    % the first dimension. The for loop goes from 1 to the
+    % size of the second dimension of ns and prints the output
+    coords_ns = zeros(size(ns,2),1)
+    for ii = 1:size(ns,2)
+        coords_ns(ii,1) = ns_new(ii,end); 
+    end
+
+% this if statement means b is in the column space
+elseif ((size(b,1) == size(cs,1)) && (rank(cs_new)==rank(cs))) && (size(b,1) ~=size(ns,1) || rank(ns_new)~=rank(ns))
+    % set variable coords_cs to the zeros of size of cs in 2nd dimension in
+    % the first dimension. The for loop goes from 1 to the
+    % size of the second dimension of cs and prints the output
+        coords_cs = zeros(size(cs,2),1);
+        for ii = 1:size(cs,2)
+            coords_cs(ii,1) = cs_new(ii,end);
+        end 
+    
+% this if statement means b is in both the null and column space
+elseif ((rank(ns_new) == rank(ns)) && (rank(cs_new) == rank(cs)))
+    % same as above you set coord_cs and coord_ns to zeros again
+    coords_cs = zeros(size(cs,2),1);    
+    coords_ns = zeros(size(ns,2),1);
+    % The for loop goes from 1 to the size of the second dimension of cs and prints the output
+    for ii = 1:size(cs,2)
+        coords_cs(ii,1) = cs_new(ii,end);
+    end
+    % The for loop goes from 1 to the size of the second dimension of ns and prints the output
+    for ii = 1:size(ns,2)
+        coords_ns(ii,1) = ns_new(ii,end);
+    end
+end
+cs
+ns
+coords_cs
+coords_ns
+end
