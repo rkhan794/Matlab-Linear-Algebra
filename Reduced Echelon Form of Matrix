@@ -1,0 +1,155 @@
+This will
+% reduce the current matrix current_M into reduced echelon form. This will
+% also output a row vector containing the numbers of pivot columns
+function [M, piv] = reduce(current_M)
+% set the first or the row you start with intially to 1
+row_start = 1;
+% set piv vector to empty intially
+piv = [];
+% big while condition where most of the code for the reduce function is. If
+% anything becomes false or breaks the while loop it'll stop. This is important 
+% because we have to loop through every column in the matrix to find pivot
+while true
+    % check max of absoulte value of the current matrix starting from
+    % initial row and going to the end, with all columns selected and
+    % largest element in each column.
+    if row_start == 1
+        [max_abs, max_loc] = max(abs(current_M(row_start:end, :)), [], 1);
+    else 
+        [max_abs, max_loc] = max(abs(current_M(row_start:end, piv(end):end)), [], 1);
+    end
+    % current index
+    ind = find(max_abs, 1);
+    % if current index is empty then the loop breaks
+    if (isempty(ind))
+        break 
+    end
+    % if piv is empty then new index equals the current index. If not then
+    % it is current index plus pivot of last column minus one
+    if isempty(piv)
+        new_ind =  ind;
+    else
+        new_ind = (ind + piv(end) - 1);
+    end
+    % add to the piv vector with piv and new index
+    piv = [piv new_ind];
+    % this if statement checks if new index is nonzero and if it is then it
+    % breaks 
+    if (new_ind >= size(current_M, 2))
+        break
+    else
+        % use exchange function here to move the row with nonzero number
+        % where it belongs
+        if (max_loc(ind) > 0)
+            current_M = exchange(current_M, row_start, max_loc(ind) + row_start - 1);
+        end
+        % this for loop, loops through the rows and takes care of the
+        % numbers below the first nonzero number, setting it to 0.
+        % Dividing because you have to divide by the first nonzero number.
+        % -1 multiplied by the row that has the first nonzero number
+        for ii = row_start + 1:size(current_M, 1)
+            row = current_M(ii, new_ind) / current_M(row_start, new_ind);
+            current_M = add(current_M, -1*row, row_start, ii);
+        end
+        % this increments row_start, the row you intially start when a new
+        % row is done being reduced 
+        row_start = row_start + 1;
+    end
+end
+% The output matrix you have to get equal to reduced matrix
+M = current_M;
+% this for loop goes from length of pivot vecotr to one by incrementing by -1.
+% find of M, all columns selected and piv of pivot.
+for pivot = length(piv):-1:1
+    % new row equals a row using the find function of matrix M, all rows
+    % selected with piv(pivot) as column.
+    new_row = find(M(:, piv(pivot)), 1, "last");
+    % for output matrix M you multiply the new_row of matrix M with value of d in this
+    % case result of 1/(M(new_row, piv(pivot)) 
+    M = mult(M, 1/(M(new_row, piv(pivot))), new_row);
+    % this for loop goes from initial value of 1 to new_row minus 1. It also contains the add function, row1 
+    % being new_row and row2 being ii from the for loop. 
+    for ii = 1:new_row-1
+        M = add(M, -1*M(ii, piv(pivot)), new_row, ii);
+    end
+end
+end
+
+
+
+function M = exchange(M, row1, row2)
+% if nargin == 2 or row2 not given row is exchanged with the first row
+if nargin == 2
+    row2 = 1;
+end
+% If neither row1 nor row2 is given, then the program exchanges the first and second rows of M
+if nargin == 1
+    row1 = 2;
+    row2 = 1;
+end
+% this is a condition to check if row1 and row2 are integers and not
+% decimals because a row cannot be a decimal
+if ~(row1 == round(row1)) && ~(row2 == round(row2))
+    error('Not an integer');
+end
+% this is a condition to check if the row1 and row2 are between 1 and
+% number of rows of the given matrix M. 
+if ~(row1 >= 1 && row1 <= size(M,1)) || ~(row2 >= 1 && row2 <= size(M,1))
+    error('Rows not between 1 and number of rows');
+end
+% fprintf to tell user what is happening when running the exchange
+% function.
+fprintf('You are exchanging row %i and row %i in Matrix M\n',row1,row2);
+% Matrix M's rows are exchanged 
+M([row1,row2],:) = M([row2,row1],:);
+end
+
+
+function M = mult(M, d, row)
+% this condition checks if d is a nonzero number
+if d == 0
+    error('d has to be a nonzero number');
+end
+% if row is not given, row is set to 1
+if nargin == 2
+    row = 1;
+end
+% this is a condition to check if row is a integer and not
+% a decimal because a row cannot be a decimal
+if ~(row == round(row))
+    error('Not an integer');
+end
+% this is a condition to check if row is between 1 and
+% number of rows of the given matrix M.
+if ~(row >= 1 && row <= size(M,1))
+    error('Row not between 1 and number of rows');
+end
+% same matrix except with the row multiplied by d
+M(row,:) = M(row,:)*d;
+% this tells the user what is happening and more specifically what row is
+% getting multiplied and how much
+fprintf('Row %i is getting multiplied by %f\n',row,d);
+end
+
+
+function M = add(M, r, row1, row2)
+% if row2 is not given row2 is assumed to be 1
+if nargin == 3
+    row2 = 1;
+end
+% this is a condition to check if row1 and row2 are integers and not
+% decimals because a row cannot be a decimal
+if ~(row1 == round(row1)) && ~(row2 == round(row2))
+    error('Not an integer');
+end
+% this is a condition to check if the row1 and row2 are between 1 and
+% number of rows of the given matrix M. 
+if ~(row1 >= 1 && row1 <= size(M,1)) || ~(row2 >= 1 && row2 <= size(M,1))
+    error('Rows not between 1 and number of rows');
+end
+% same matrix with r times row row1 added to row row2
+M(row2,:) = M(row2,:) + r*M(row1,:);
+% this tells the user what is happening, what number you are multiplying
+% with row1 and adding to row2
+fprintf('%f will be multiplied with row %i and added to row %i\n',r,row1,row2);
+end
